@@ -10,35 +10,43 @@ namespace TokenRefreshDemo
         private string sessionKey;
         private readonly TimeSpan _maxDuration = TimeSpan.FromHours(4);
         private DateTime _startTime;
-        private readonly string clientId = "fc9c2ecf-0c43-48d4-87a6-72e3942c5d2c";
-        private readonly string tenantId = "72f988bf-86f1-41af-91ab-2d7cd011db47";
+        private readonly string clientId = "024a61dc-2529-4609-99ea-40cc8ba8d756";
+        private readonly string tenantId = "d6ef095c-bab3-44e5-a20c-3484b3407046";
         private readonly string redirectUri = "https://localhost:7269/callback";
-        private readonly string[] scopes = { "api://fc9c2ecf-0c43-48d4-87a6-72e3942c5d2c/examplescope" };
+        private readonly string[] scopes = { "https://management.azure.com/user_impersonation" };
         private readonly string certPath = @"C:\Dev\cert.pfx";
 
         public TokenRefreshService(ILogger<TokenRefreshService> logger)
         {
             _logger = logger;
             var certificate = new X509Certificate2(certPath);
+
             _confidentialClient = ConfidentialClientApplicationBuilder.Create(clientId)
-                   .WithAuthority(AzureCloudInstance.AzurePublic, tenantId)
-                   .WithRedirectUri(redirectUri)
-                   .WithCertificate(certificate)
-                   .Build();
+                    .WithAuthority(AzureCloudInstance.AzurePublic, tenantId)
+                    .WithRedirectUri(redirectUri)
+                    .WithClientSecret("")
+                    .Build();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _startTime = DateTime.Now;
             string sessionKey = null;
-            string rpOboToken = "AccessTokenFromSC";
-            _ = await ((ILongRunningWebApi)_confidentialClient)
-                         .InitiateLongRunningProcessInWebApi(
-                              scopes,
-                              rpOboToken,
-                              ref sessionKey)
-                         .WithSendX5C(true)
-                         .ExecuteAsync();
+            string rpOboToken = "TokenFromSC";
+            try
+            {
+                _ = await ((ILongRunningWebApi)_confidentialClient)
+                             .InitiateLongRunningProcessInWebApi(
+                                  scopes,
+                                  rpOboToken,
+                                  ref sessionKey)
+                             .WithSendX5C(true)
+                             .ExecuteAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
 
             while (!stoppingToken.IsCancellationRequested)
             {
